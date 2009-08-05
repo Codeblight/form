@@ -1,6 +1,6 @@
 /*
  * jQuery Form Plugin
- * version: 2.28 (10-MAY-2009)
+ * version: 2.29 (06-AUG-2009)
  * @requires jQuery v1.2.2 or later
  *
  * Examples and documentation at: http://malsup.com/jquery/form/
@@ -270,10 +270,17 @@ $.fn.ajaxSubmit = function(options) {
             }
         }, 10);
 
-        var nullCheckFlag = 0;
-
         function cb() {
-            if (cbInvoked++) return;
+
+            // opera bugs fixup (you can't submit to about:blank)
+            var doc;
+            try
+            {
+                  doc = io.contentWindow ? io.contentWindow.document : io.contentDocument ? io.contentDocument : io.document;
+                  if (!doc) return;
+                  if (doc.location == 'about:blank') return;
+
+            } catch (e){}
 
             io.detachEvent ? io.detachEvent('onload', cb) : io.removeEventListener('load', cb, false);
 
@@ -281,19 +288,7 @@ $.fn.ajaxSubmit = function(options) {
             try {
                 if (timedOut) throw 'timeout';
                 // extract the server response from the iframe
-                var data, doc;
-
-                doc = io.contentWindow ? io.contentWindow.document : io.contentDocument ? io.contentDocument : io.document;
-
-                if ((doc.body == null || doc.body.innerHTML == '') && !nullCheckFlag) {
-                    // in some browsers (cough, Opera 9.2.x) the iframe DOM is not always traversable when
-                    // the onload callback fires, so we give them a 2nd chance
-                    nullCheckFlag = 1;
-                    cbInvoked--;
-                    setTimeout(cb, 100);
-                    return;
-                }
-
+                var data;
                 xhr.responseText = doc.body ? doc.body.innerHTML : null;
                 xhr.responseXML = doc.XMLDocument ? doc.XMLDocument : doc;
                 xhr.getResponseHeader = function(header){
